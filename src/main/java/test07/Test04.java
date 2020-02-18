@@ -1,5 +1,7 @@
 package test07;
 
+import java.lang.reflect.Proxy;
+
 /**
  * @author hyp
  * Project name is LeedCodeLearn
@@ -7,9 +9,30 @@ package test07;
  * hyp create at 20-1-9
  **/
 public class Test04 {
-
+//    interface Iservice{
+//        String service();
+//    }
+//    class HelloService implements Iservice{
+//        String service(){
+//            return "我的服务";
+//        }
+//    }
+//
+//    class Proxy implements Iservice{
+//        private Iservice service;
+//        public Proxy(Iservice service){
+//            this.service=service;
+//        }
+//        String service(){
+//            //do something
+//            service.service();
+//            //do something
+//        }
+//    }
 
     public static void main(String[] args) {
+
+//        java.lang.reflect.Proxy.newProxyInstance(Iservice.class.getClassLoader())
         //集合：0,1,2,3,4,5,6,7,8,9
         //时间格式:hh:mm:ss.www
         //hh:0-23:
@@ -23,7 +46,37 @@ public class Test04 {
 
 //        System.out.println(Arrays.toString(test04.getNoZeroIntegers(11)));
 
-        System.out.println(test04.minFlips(2, 6, 5));
+//        System.out.println(test04.minFlips(2, 6, 5));
+        System.out.println(test04.solution(nums));
+    }
+
+    public int solution(int [] nums){
+        int res=0;
+        if(nums!=null&&nums.length>=2)
+        {
+
+            for(int i=0;i<nums.length;i++)
+            {
+                int f=nums[i];
+                int t=-1;
+                for(int j=i+1;j<nums.length;j++)
+                {
+                    if(nums[j]>t)
+                    {
+                        t=nums[j];
+                    }
+                }
+                if(t!=-1)
+                {
+                    int p=t-f;
+                    if(p>res)
+                    {
+                        res=p;
+                    }
+                }
+            }
+        }
+        return res;
     }
 
     public int makeConnected(int n, int[][] connections) {

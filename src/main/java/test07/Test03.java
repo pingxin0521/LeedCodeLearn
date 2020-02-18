@@ -10,6 +10,8 @@ import java.util.Stack;
  * hyp create at 20-1-6
  **/
 public class Test03 {
+
+
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
         int res;
