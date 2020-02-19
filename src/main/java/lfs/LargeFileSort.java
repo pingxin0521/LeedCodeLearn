@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -19,12 +20,12 @@ import java.util.concurrent.Future;
  * hyp create at 20-2-18
  **/
 public class LargeFileSort {
-    private final static String ROOT_FILE_PATH = "/home/hyp/dev/data";
+    private final static String ROOT_FILE_PATH = "/home/hyp/dev/data/";
 
-    private final static String TMP_FILE_PATH = ROOT_FILE_PATH + "/tmp";
+    private final static String TMP_FILE_PATH = ROOT_FILE_PATH + "/tmp/";
 
 
-    private final static String FINAL_FILE_PATH = ROOT_FILE_PATH + "/res";
+    private final static String FINAL_FILE_PATH = ROOT_FILE_PATH + "/res/";
 
     // 测试文件
     private static String[] genFiles = new String[10];
@@ -39,24 +40,18 @@ public class LargeFileSort {
     private static BlockThreadPool pool = null;
 
     public static void main(String[] args) throws IOException {
-        pool = new BlockThreadPool(3);
+        int tNums = Runtime.getRuntime().availableProcessors() + 1;
+        pool = new BlockThreadPool(tNums);
 
         //确保文件夹存在
-        File f1 = new File(ROOT_FILE_PATH);
-        if (f1.exists()) {
-            f1.delete();
+        if (Files.exists(Paths.get(ROOT_FILE_PATH))) {
+            Files.walk(Paths.get(ROOT_FILE_PATH)).sorted(Comparator.reverseOrder()).map(Path::toFile)
+                    .peek(System.out::println).forEach(File::delete);
         }
-        f1.mkdir();
-        f1 = new File(FINAL_FILE_PATH);
-        if (f1.exists()) {
-            f1.delete();
-        }
-        f1.mkdir();
-        f1 = new File(TMP_FILE_PATH);
-        if (f1.exists()) {
-            f1.delete();
-        }
-        f1.mkdir();
+
+        new File(ROOT_FILE_PATH).mkdir();
+        new File(TMP_FILE_PATH).mkdir();
+        new File(FINAL_FILE_PATH).mkdir();
 
 
         long genStart = System.currentTimeMillis();
@@ -88,10 +83,11 @@ public class LargeFileSort {
         System.out.println(String.format("合并完成数据完成：%s s", (mergeEnd - mergeStart) / 1000));
         System.out.println("************");
 
+        divFiles.add(new File(TMP_FILE_PATH + "resultFile.txt"));
         // 验证
         validation();
 
-        //拆分为十个文件
+//        //拆分为十个文件
         divFinalFiles();
 
         System.out.println(
@@ -118,6 +114,7 @@ public class LargeFileSort {
                 System.out.println("验证不通过");
                 System.exit(0);
             }
+            pre = line;
         }
         System.out.println("验证通过");
     }
@@ -133,7 +130,7 @@ public class LargeFileSort {
 
         doneSignal = new CountDownLatch(10);
         for (int i = 0; i < genFiles.length; i++) {
-            genFiles[i] = ROOT_FILE_PATH + File.pathSeparator + "originalData" + i + ".txt";
+            genFiles[i] = ROOT_FILE_PATH + "originalData" + i + ".txt";
             executorService.execute(new GenerateFileTask(genFiles[i]));
         }
         try {
@@ -272,7 +269,7 @@ public class LargeFileSort {
             throw new Exception("文件不存在");
         }
         //文件大小
-        int mbsize = (int) Math.ceil(file.length() >> 10);
+        int mbsize = SIZE;
         //切分后的文件数
         int fileNum = (int) Math.ceil((int) (file.length() / mbsize)) + 1;
 
@@ -297,8 +294,8 @@ public class LargeFileSort {
         String name = file.getName();
         for (Integer i = 0; i < num; i++) {
             //创建临时文件
-            File tmpfile = new File(TMP_FILE_PATH + File.pathSeparator + name + ".temp+" + i + ".txt");
-            if (!tmpfile.exists()) {
+            File tmpfile = new File(TMP_FILE_PATH + name + ".temp+" + i + ".txt");
+            if (tmpfile.exists()) {
                 tmpfile.delete();
             }
             tmpfile.createNewFile();
@@ -331,7 +328,7 @@ public class LargeFileSort {
             int byteSum = 0;
             // 循环临时文件并循环大文件
             while ((line = reader.readLine()) != null) {
-                line += "\n";
+//                line += "\n";
                 byteSum += line.getBytes().length;
                 //如果长度达到每个文件大小则重新计算
                 if (byteSum >= SIZE) {
@@ -339,7 +336,7 @@ public class LargeFileSort {
                     //写入到文件
                     putLineListToFile(fileList.get(index), lineList);
                     long t2 = System.currentTimeMillis();
-                    System.out.println(String.format("写入文件%s：%s ms", name+index, t2 - t1));
+                    System.out.println(String.format("写入文件%s：%s ms", name + index, t2 - t1));
                     index--;
                     byteSum = line.getBytes().length;
                     lineList.clear();
@@ -366,12 +363,12 @@ public class LargeFileSort {
      * @throws IOException
      */
     public static void putLineListToFile(File file, List<String> lineList) throws IOException {
-        try (FileOutputStream fos = new FileOutputStream(file)) {
+        try (FileOutputStream fos = new FileOutputStream(file, true)) {
             // 第一次写入文件时，调用Collection.sort进行内部排序
             lineList.sort(new LineComparator());
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < lineList.size(); i++) {
-                sb.append(lineList.get(i));
+                sb.append(lineList.get(i)).append("\n");
                 if ((i + 1) % 1000 == 0) {
                     fos.write(sb.toString().getBytes());
                     sb.setLength(0);
@@ -450,30 +447,33 @@ public class LargeFileSort {
     private static void mergeFiles() throws IOException {
         //文件数过少直接合并
         if (divFiles.size() < 20) {
-            mergeLargeFile(divFiles, ROOT_FILE_PATH + File.pathSeparator + "resultFile.txt");
+            mergeLargeFile(divFiles, TMP_FILE_PATH + "resultFile.txt");
             return;
         }
-        while (divFiles.size()>20)
-        {
-            mergeFilesToFile();
+        while (divFiles.size() > 20) {
+            mergeFilesToFile(divFiles.size());
         }
         System.out.println("最终合并");
         // 最终合并
-        File resultFile = mergeLargeFile(divFiles, ROOT_FILE_PATH + File.pathSeparator + "temp_reslt_all.txt");
+        File resultFile = mergeLargeFile(divFiles, TMP_FILE_PATH + "resultFile.txt");
         divFiles.clear();
         divFiles.add(resultFile);
 
     }
 
-    public static void mergeFilesToFile() throws IOException {
-        ArrayList<File> files2 = new ArrayList<>(divFiles);
+    public static void mergeFilesToFile(int num) throws IOException {
+        List<File> files2 = new CopyOnWriteArrayList<File>(divFiles);
         divFiles.clear();
 
-        List<List<File>> divTwo = new ArrayList();
-        // 划分任务，15个为一组
-        for (int i = 0; i < files2.size(); i += 15) {
-            List<File> files = new ArrayList();
-            for (int j = i; j < files2.size() && j < (i + 15); j++) {
+        List<List<File>> divTwo = new CopyOnWriteArrayList<List<File>>();
+        int t = 15;
+        // 划分任务，15个为一组,如果剩余一组数量小于5，则跟上一组合并
+        for (int i = 0; i < files2.size(); i += t) {
+            List<File> files = new CopyOnWriteArrayList<File>();
+            if (files2.size() - (i + t) < 5) {
+                t = files2.size() - i;
+            }
+            for (int j = i; j < files2.size() && j < i + t; j++) {
                 files.add(files2.get(j));
             }
             divTwo.add(files);
@@ -481,7 +481,7 @@ public class LargeFileSort {
 
         doneSignal = new CountDownLatch(divTwo.size());
         for (int i = 0; i < divTwo.size(); i++) {
-            pool.execute(new MergeTask(divTwo.get(i), ROOT_FILE_PATH + File.pathSeparator + "temp_reslt" + i + ".txt"));
+            pool.execute(new MergeTask(divTwo.get(i), TMP_FILE_PATH + num + "temp_reslt" + i + ".txt"));
         }
         try {
             // 等待合并文件完成
@@ -489,8 +489,6 @@ public class LargeFileSort {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
-
     }
 
 
@@ -509,13 +507,19 @@ public class LargeFileSort {
         @Override
         public void run() {
             try {
+                long t1 = System.currentTimeMillis();
+
                 File file = mergeLargeFile(files, fn);
                 divFiles.add(file);
                 // 任务执行完毕递减锁存器
                 doneSignal.countDown();
-                System.out.println("完成合并任务：" + doneSignal.getCount());
+                long t2 = System.currentTimeMillis();
+                System.out.println("完成合并任务：" + doneSignal.getCount() + ",耗时：" + (t2 - t1));
             } catch (Exception e) {
                 System.out.println(e.getMessage());
+                //出错则重新进行合并
+                divFiles.addAll(files);
+                doneSignal.countDown();
                 e.printStackTrace();
             }
 
@@ -539,7 +543,13 @@ public class LargeFileSort {
         }
         BufferedWriter bw = null;
 
-        bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f)));
+        File file = new File(f);
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+
+
+        bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f, true)));
         int count = 0;
         FileEntity fe = null;
         StringBuilder sb = new StringBuilder();
@@ -568,7 +578,8 @@ public class LargeFileSort {
             bw.close();
         }
         entities.forEach(FileEntity::close);
-        return new File(f);
+        fs.forEach(File::delete);
+        return file;
     }
 
     /**
@@ -618,12 +629,12 @@ public class LargeFileSort {
 
         int index = 0;
 
-        File tmpFile = new File(FINAL_FILE_PATH + "/data_" + index + ".txt");
+        File tmpFile = new File(FINAL_FILE_PATH + "data_" + index + ".txt");
         if (!tmpFile.exists()) {
             tmpFile.createNewFile();
         }
 
-        FileOutputStream fos = new FileOutputStream(tmpFile);
+        FileOutputStream fos = new FileOutputStream(tmpFile, true);
 
         //统计行数
         int lineSum = 0;
@@ -640,7 +651,7 @@ public class LargeFileSort {
                     if (fos != null) {
                         fos.close();
                     }
-                    divFiles.set(index, tmpFile);
+                    divFiles.add(index, tmpFile);
 
 
                     index++;
@@ -648,11 +659,11 @@ public class LargeFileSort {
                     if (index >= fNum) {
                         break;
                     }
-                    tmpFile = new File(FINAL_FILE_PATH + "/data_" + index + ".txt");
+                    tmpFile = new File(FINAL_FILE_PATH + "data_" + index + ".txt");
                     if (!tmpFile.exists()) {
                         tmpFile.createNewFile();
                     }
-                    fos = new FileOutputStream(tmpFile);
+                    fos = new FileOutputStream(tmpFile, true);
 
                     sb.setLength(0);
                 }
