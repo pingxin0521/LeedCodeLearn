@@ -13,7 +13,6 @@ public class Test05 {
         Test05 test05 = new Test05();
 //        System.out.println(Arrays.deepToString(test05.matrixBlockSum(new int[][]{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}, 1)));
 
-        System.out.println(test05.distinctEchoSubstrings("leetcodeleetcode"));
 
     }
 
@@ -71,35 +70,6 @@ public class Test05 {
         dfs(root, -1, -1);
         return sum;
     }
-
-    public int distinctEchoSubstrings(String text) {
-        int len = text.length();
-        int cnt = 0;
-        for (int k = 2; k < len; k += 2) {
-            Set<String> res = new HashSet<>();
-            for (int i = 0; i + k <= len; i++) {
-                String tmp = text.substring(i,i+ k / 2);
-                boolean flag = true;
-                if (res.contains(tmp))
-                {
-                    continue;
-                }
-                for (int pos = 0; pos < k / 2; pos++) {
-                    if (text.charAt(i + pos) != text.charAt(i + k / 2 + pos)) {
-                        flag = false;
-                        break;
-                    }
-                }
-                if (flag)
-                {
-                    res.add(tmp);
-                }
-            }
-            cnt+=res.size();
-        }
-        return cnt;
-    }
-
 }
 
 class TreeNode {

@@ -10,15 +10,20 @@ package test07;
  **/
 public class LongestCommonPrefix {
     public String longestCommonPrefix(String[] strs) {
-        if (strs.length == 0) {
+        if (strs.length == 0)
             return "";
-        }
-        String str = strs[0];
+        String ans = strs[0];
         for (int i = 1; i < strs.length; i++) {
-            while (strs[i].indexOf(str) != 0) {
-                str = str.substring(0, str.length() - 1);
+            int j = 0;
+            for (; j < ans.length() && j < strs[i].length(); j++) {
+                if (ans.charAt(j) != strs[i].charAt(j))
+                    break;
+            }
+            ans = ans.substring(0, j);
+            if ("".equals(ans)) {
+                return ans;
             }
         }
-        return str;
+        return ans;
     }
 }

@@ -35,30 +35,6 @@ public class AddTwoNumbers {
         return root.next;
     }
 
-    /**
-     * https://leetcode-cn.com/problems/remove-nth-node-from-end-of-list/
-     *
-     * @param head
-     * @param n
-     * @return
-     */
-    public ListNode removeNthFromEnd(ListNode head, int n) {
-        ListNode d = new ListNode(-1);
-        d.next = head;
-        ListNode pre = d, c = d;
-        for (int i = 0; i < n; i++) {
-            if (c == null) {
-                return null;
-            }//多余代码，防止N>链表长度
-            c = c.next;
-        }
-        while (c.next != null) {
-            pre = pre.next;
-            c = c.next;
-        }
-        pre.next = pre.next.next;
-        return d.next;
-    }
 
     /**
      * https://leetcode-cn.com/problems/merge-two-sorted-lists/
