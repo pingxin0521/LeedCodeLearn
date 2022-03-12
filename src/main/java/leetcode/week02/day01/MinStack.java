@@ -1,5 +1,6 @@
 package leetcode.week02.day01;
 
+import java.util.LinkedList;
 import java.util.Stack;
 
 /**
@@ -11,14 +12,14 @@ import java.util.Stack;
  **/
 public class MinStack {
 
-    private Stack<Integer> stack;
+    private LinkedList<Integer> stack;
     private int min;
 
     /**
      * initialize your data structure here.
      */
     public MinStack() {
-        stack = new Stack<>();
+        stack = new LinkedList<>();
         min = Integer.MAX_VALUE;
     }
 

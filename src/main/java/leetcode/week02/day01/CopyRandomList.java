@@ -1,6 +1,7 @@
 package leetcode.week02.day01;
 
 /**
+ *https://leetcode-cn.com/problems/copy-list-with-random-pointer/
  * @author hyp
  * Project name is LeedCodeLearn
  * Include in leetcode.week02.day01
@@ -13,34 +14,34 @@ public class CopyRandomList {
         }
         Node cur = head;
         Node next = null;
-        //复制新链表，只复制next指针，不复制random指针
-        while (cur != null) {
+        // 1. 复制各节点，并构建拼接链表
+        while (cur!=null){
             next = cur.next;
-            Node newNode = new Node(cur.val);
-            newNode.next = cur.next;
-            cur.next = newNode;
-            cur = next;
+            Node n= new Node(cur.val);
+            cur.next = n;
+            n.next = next;
+            cur=next;
         }
+        // 2. 构建各新节点的 random 指向
         cur = head;
-        //复制random指针
-        while (cur != null) {
-            next = cur.next.next;
-            cur.next.random = cur.random != null ? cur.random.next : null;
-            cur = next;
+        while (cur!=null){
+            if (cur.random!=null){
+                cur.next.random=cur.random.next;
+            }
+            cur = cur.next.next;
         }
-        //把复制链表和源链表分开
-        cur = head;
-        Node newHead = cur.next;
-        Node copyCur = null;
-        while (cur != null) {
-            //record the next node
-            next = cur.next.next;
-            copyCur = cur.next;
-            cur.next = next;
-            copyCur.next = next != null ? next.next : null;
-            cur = next;
+        // 3. 拆分两链表
+        cur = head.next;
+        Node pre = head;
+        Node res = head.next;
+        while (cur.next!=null){
+            pre.next=pre.next.next;
+            cur.next = cur.next.next;
+            pre = pre.next;
+            cur = cur.next;
         }
-        return newHead;
+        pre.next = null;// 单独处理原链表尾节点
+        return res;// 返回新链表头节点
     }
 }
 

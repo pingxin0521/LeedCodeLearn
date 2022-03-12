@@ -1,5 +1,8 @@
 package test07;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/
  * @author hyp
@@ -8,19 +11,26 @@ package test07;
  * hyp create at 20-1-12
  **/
 public class LengthOfLongestSubstring {
-    public int lengthOfLongestSubstring(String s) {
-        int maxLength = 0;
-        char[] chars = s.toCharArray();
-        int leftIndex = 0;
-        for (int j = 0; j < chars.length; j++) {
-            for (int innerIndex = leftIndex; innerIndex < j; innerIndex++) {
-                if (chars[innerIndex] == chars[j]) {
-                    maxLength = Math.max(maxLength, j - leftIndex);
-                    leftIndex = innerIndex + 1;
-                    break;
-                }
-            }
+    public static void main(String[] args) {
+        System.out.println(lengthOfLongestSubstring("abcabcbb"));
+    }
+    public static int lengthOfLongestSubstring(String s) {
+        if(s == null || s.length() < 1) {
+            return 0;
         }
-        return Math.max(chars.length - leftIndex, maxLength);
+
+        int len=s.length();
+        Map<Character,Integer> map = new HashMap<>();
+
+        int l=0;
+        int max = 0;
+        for(int i=0;i<len;i++){
+            char c = s.charAt(i);
+            l = Math.max(l,map.getOrDefault(c,-1)+1);
+            max = Math.max(max,i-l+1);
+            map.put(c,i);
+        }
+
+        return max;
     }
 }
